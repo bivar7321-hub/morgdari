@@ -169,6 +169,25 @@ class MainActivity : Activity() {
     private fun relayOn(m: Map<String, String>, k: String): Boolean = (m[k] ?: "").endsWith("1")
     private fun relayManual(m: Map<String, String>, k: String): Boolean = (m[k] ?: "").startsWith("M")
 
+    // نوار وضعیت آخرین دستور (در همه‌ی صفحه‌ها): نارنجی = منتظر تأیید، سبز = انجام شد، قرمز = دستگاه قبول نکرد
+    private fun addStatusBanner(col: LinearLayout) {
+        val pt = Util.pendingText(prefs)
+        val okT = Util.recent(prefs, "last_ok")
+        val badT = Util.recent(prefs, "last_bad")
+        val banner = when {
+            pt.isNotEmpty() -> Pair("⏳ ارسال شد، منتظر تأیید دستگاه: $pt", "#C9860A")
+            badT != null -> Pair("✖ دستگاه قبول نکرد: $badT", "#B3261E")
+            okT != null -> Pair("✔ انجام شد: $okT", "#1F6B4A")
+            else -> null
+        }
+        if (banner != null) {
+            val bt = label(banner.first, 15f, Color.WHITE, bold = true)
+            bt.background = roundBg(Color.parseColor(banner.second), 12)
+            bt.setPadding(dp(14), dp(10), dp(14), dp(10))
+            col.addView(bt, cardLp())
+        }
+    }
+
     private fun homePage(): View {
         val m = status()
         val col = pageColumn()
@@ -197,6 +216,7 @@ class MainActivity : Activity() {
         val t = prefs.getString("status_time", null)
         head.addView(label(if (t == null) "هنوز وضعیتی دریافت نشده؛ دکمه‌ی ↻ را بزنید" else "آخرین وضعیت ${fa(t)}", 13f, Color.parseColor("#BFE3CF")))
         col.addView(head)
+        addStatusBanner(col)
         val clk = m["CLK"] ?: "--"
         col.addView(label("⏱ ساعت دستگاه: " + (if (clk.startsWith("-")) "تنظیم نشده" else fa(clk)), 14f, cText), cardLp())
         col.addView(bigBtn("همگام‌سازی ساعت دستگاه با گوشی", false) { syncClockToDevice() }, btnLp())
@@ -324,7 +344,7 @@ class MainActivity : Activity() {
         c.setPadding(dp(10), dp(12), dp(10), dp(10))
         c.background = cardBg()
         c.gravity = Gravity.CENTER_HORIZONTAL
-        c.addView(label("کانال ${fa(idx.toString())}", 14f, cText, bold = true))
+        c.addView(label(if (idx == 4) "لامپ اصلی ۲۲۰" else "کانال ${fa(idx.toString())}", 14f, cText, bold = true))
         c.addView(chip(if (!m.containsKey(k)) "نامشخص" else if (on) "روشن" else "خاموش", on, Util.isPending(prefs, idx)))
         val mins = edit("دقیقه (۱ تا ۱۴۴۰، خالی = تا خاموش کردن)", InputType.TYPE_CLASS_NUMBER)
         mins.textSize = 12f
@@ -337,6 +357,7 @@ class MainActivity : Activity() {
             else if (v != null && v in 1..1440) sendSms("R${idx}ON $v")
             else toast("زمان بین ۱ تا ۱۴۴۰ دقیقه (۲۴ ساعت)")
         })
+        if (idx == 4) c.addView(smallBtn("خودکار", false) { sendSms("AUTO4") })
         return c
     }
 
@@ -345,6 +366,7 @@ class MainActivity : Activity() {
         val m = status()
         val col = pageColumn()
         col.addView(pageHeader("🚪", "درب سالن", "رله‌ی ۲ باز می‌کند و رله‌ی ۵ می‌بندد"))
+        addStatusBanner(col)
         val known = m.containsKey("R2")
         val closed = relayOn(m, "R2")
 
@@ -422,6 +444,7 @@ class MainActivity : Activity() {
     private fun autoPage(): View {
         val col = pageColumn()
         col.addView(pageHeader("🎛", "خودکارسازی", "قانون‌های کار هیتر، فن و لامپ"))
+        addStatusBanner(col)
 
         val heat = edit("دمای روشن شدن هیتر (°C)", InputType.TYPE_CLASS_NUMBER)
         val hc = card()
@@ -573,6 +596,7 @@ class MainActivity : Activity() {
     private fun settingsPage(): View {
         val col = pageColumn()
         col.addView(pageHeader("💬", "پیام‌ها و اتصال", "اپ با پیامک به دستگاه فرمان می‌دهد"))
+        addStatusBanner(col)
 
         val dev = edit("شماره‌ی سیم‌کارت دستگاه", InputType.TYPE_CLASS_PHONE)
         dev.setText(prefs.getString("device", ""))
@@ -664,7 +688,7 @@ class MainActivity : Activity() {
         try {
             val mgr: SmsManager = if (Build.VERSION.SDK_INT >= 31) getSystemService(SmsManager::class.java) else @Suppress("DEPRECATION") SmsManager.getDefault()
             mgr.sendTextMessage(dev, null, text, null, null)
-            Util.addPending(prefs, text)
+            if (text.trim().uppercase() != "STAT") Util.addPending(prefs, text)
             sendBroadcast(Intent(Util.ACTION_UPDATE).setPackage(packageName))
             val log = (prefs.getString("log", "") ?: "").split("\n").filter { it.isNotBlank() }.toMutableList()
             val second = text.split(" ").getOrNull(1)

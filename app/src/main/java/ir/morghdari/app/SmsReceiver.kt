@@ -18,9 +18,12 @@ class SmsReceiver : BroadcastReceiver() {
         val body = msgs.joinToString("") { it.messageBody ?: "" }.trim()
         val e = prefs.edit()
         val bad = body.startsWith("Invalid", true) || body.startsWith("Wrong", true) || body.startsWith("Error", true) || body.contains("not allowed", true)
-        if (body.startsWith("T:") || bad) {
+        if (bad) {
+            e.apply()
+            Util.rejectPending(prefs)
+        } else if (body.startsWith("T:")) {
             e.remove("pending")
-        } else if (!bad) {
+        } else {
             e.apply()
             Util.confirmPending(prefs)
         }

@@ -226,7 +226,8 @@ class MainActivity : Activity() {
         stats.orientation = LinearLayout.HORIZONTAL
         stats.addView(statTile("🌡", fa(m["T"] ?: "--") + "°", "دما"), tileLp())
         stats.addView(statTile("💧", fa(m["H"] ?: "--") + "٪", "رطوبت"), tileLp())
-        stats.addView(statTile("☀️", fa(m["L"] ?: "--") + "٪", "نور"), tileLp())
+        stats.addView(statTile("☀️", fa(m["L"] ?: "--") + "٪", "نور بیرون"), tileLp())
+        if (m.containsKey("LI")) stats.addView(statTile("🏠", fa(m["LI"] ?: "--") + "٪", "نور داخل"), tileLp())
         val sp = LinearLayout.LayoutParams(-1, -2)
         sp.setMargins(dp(12), dp(14), dp(12), 0)
         col.addView(stats, sp)
@@ -561,6 +562,13 @@ class MainActivity : Activity() {
             val x = hm(sunR.text.toString())
             val y = hm(sunS.text.toString())
             if (x != null && y != null) sendSms("SET LSUN $x $y") else toast("ساعت‌ها را مثل 0630 و 1745 بنویسید")
+        }, btnLp())
+        val lin = edit("حد نور داخل سالن (۱ تا ۹۹؛ ۰ = غیرفعال)", InputType.TYPE_CLASS_NUMBER)
+        ldc.addView(label("🏠 روشن شدن لامپ ۲۲۰ در روز وقتی داخل تاریک است (سنسور نور داخل روی A6)", 13f, cMuted))
+        ldc.addView(lin)
+        ldc.addView(bigBtn("ارسال حد نور داخل", false) {
+            val a = lin.text.toString().trim().toIntOrNull()
+            if (a != null && a in 0..99) sendSms("SET LIN $a") else toast("عدد را بین ۰ تا ۹۹ بنویسید")
         }, btnLp())
         val dwf = edit("نور شروع صبح (طلوع از این عدد حساب می‌شود، مثل 20)", InputType.TYPE_CLASS_NUMBER)
         ldc.addView(dwf)

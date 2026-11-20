@@ -227,7 +227,7 @@ class MainActivity : Activity() {
         stats.addView(statTile("🌡", fa(m["T"] ?: "--") + "°", "دما"), tileLp())
         stats.addView(statTile("💧", fa(m["H"] ?: "--") + "٪", "رطوبت"), tileLp())
         stats.addView(statTile("☀️", fa(m["L"] ?: "--") + "٪", "نور بیرون"), tileLp())
-        if (m.containsKey("LI")) stats.addView(statTile("🏠", fa(m["LI"] ?: "--") + "٪", "نور داخل"), tileLp())
+        stats.addView(statTile("🏠", fa(m["LI"] ?: "--") + "٪", "نور داخل"), tileLp())
         val sp = LinearLayout.LayoutParams(-1, -2)
         sp.setMargins(dp(12), dp(14), dp(12), 0)
         col.addView(stats, sp)
